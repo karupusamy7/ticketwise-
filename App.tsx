@@ -399,8 +399,9 @@ const BookingPage = () => {
 };
 
 const ConfirmationPage = () => {
-  // In a real app we'd use useLocation() state, but for simplicity we rely on local storage or just a success message
-  // Let's assume passed via navigation state for now.
+  const location = useLocation();
+  const booking = location.state?.booking;
+  const isAiRecommended = location.state?.isAiRecommended || false;
   const [showConfetti, setShowConfetti] = useState(true);
 
   return (
@@ -413,14 +414,42 @@ const ConfirmationPage = () => {
         </div>
 
         <h2 className="text-3xl font-bold text-white mb-2">Booking Confirmed!</h2>
-        <p className="text-slate-400 mb-8">Your tickets have been sent to your email.</p>
+
+        {/* Personalized AI message per PRD */}
+        {isAiRecommended ? (
+          <div className="mb-6">
+            <p className="text-slate-300 mb-3">
+              We found the perfect match for you! 🎉
+            </p>
+            {booking?.eventTitle && (
+              <p className="text-brand-400 font-medium">
+                You're going to: {booking.eventTitle}
+              </p>
+            )}
+            <p className="text-slate-400 text-sm mt-2">
+              This event was AI-recommended based on what you were looking for.
+            </p>
+          </div>
+        ) : (
+          <p className="text-slate-400 mb-8">Your tickets have been sent to your email.</p>
+        )}
+
+        {booking && (
+          <div className="bg-slate-800/50 rounded-xl p-4 mb-6 text-left">
+            <div className="text-sm text-slate-400 space-y-1">
+              {booking.eventDate && <p>📅 {booking.eventDate}</p>}
+              {booking.eventVenue && <p>📍 {booking.eventVenue}</p>}
+              {booking.bookingRef && <p className="text-xs text-slate-500 mt-2">Ref: {booking.bookingRef}</p>}
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-col gap-3">
           <Link to="/my-tickets" className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl font-medium transition-colors">
             View My Tickets
           </Link>
           <Link to="/" className="w-full bg-transparent hover:bg-slate-800 text-brand-400 py-3 rounded-xl font-medium transition-colors">
-            Back to Home
+            Discover More Events
           </Link>
         </div>
       </div>

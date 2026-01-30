@@ -1,0 +1,110 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============ HELPER FUNCTIONS ============
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user owns the document (by uid field)
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Check user's role from their user document
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    // Check if user is admin
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'admin';
+    }
+    
+    // Validate email format (basic check)
+    function isValidEmail(email) {
+      return email.matches('.*@.*\\..*');
+    }
+    
+    // ============ COLLECTION RULES ============
+    
+    // USERS COLLECTION
+    // - Users can read their own data
+    // - Users can create their own document (on signup)
+    // - Users can update their own data
+    // - Only admins can delete users
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // BOOKINGS COLLECTION
+    // - Any authenticated user can create a booking
+    // - Users can only read their own bookings
+    // - Users can update their own bookings (e.g., cancel)
+    // - Only admins can delete bookings
+    match /bookings/{bookingId} {
+      allow read: if isAuthenticated() && 
+                    (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+                      (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+    
+    // EVENTS COLLECTION (if you add one later)
+    // - Public read access
+    // - Only admins can write
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // CONTENT COLLECTION (movies, etc.)
+    // - Public read access
+    // - Only admins can modify
+    match /content/{contentId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // REVIEWS COLLECTION (if you add one)
+    // - Public read
+    // - Authenticated users can create
+    // - Users can only update/delete their own reviews
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && 
+                              resource.data.userId == request.auth.uid;
+    }
+    
+    // CATCH-ALL: Deny everything else by default
+    // This ensures security for any undefined collections
+  }
+}
+
+/*
+ * DEPLOYMENT INSTRUCTIONS:
+ * 
+ * 1. Go to Firebase Console: https://console.firebase.google.com
+ * 2. Select your project
+ * 3. Navigate to Firestore Database > Rules
+ * 4. Copy and paste these rules
+ * 5. Click "Publish"
+ * 
+ * TESTING:
+ * - Use Firebase Emulator Suite for local testing
+ * - Use Rules Playground in Firebase Console to test specific scenarios
+ * 
+ * IMPORTANT:
+ * - These rules assume all users have a 'role' field in their user document
+ * - The default role is 'user' (set in AuthContext.tsx)
+ * - To create an admin, manually set role: 'admin' in Firestore Console
+ */
