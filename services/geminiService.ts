@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 
-const apiKey = process.env.API_KEY || '';
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 
 // Initialize the Gemini AI client lazily to avoid crashes if key is missing
 // Note: In a real production app, you might proxy this through a backend to hide the key,
