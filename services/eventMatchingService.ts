@@ -3,7 +3,7 @@ import { MOCK_MOVIES, MOCK_EVENTS } from '../constants';
 import { Movie, Event } from '../types';
 
 const apiKey = process.env.API_KEY || '';
-const ai = new GoogleGenAI({ apiKey });
+// const ai = new GoogleGenAI({ apiKey }); // Initialize lazily
 
 export interface EventRecommendation {
     item: Movie | Event;
@@ -32,8 +32,16 @@ const ALL_EVENTS = [
 ];
 
 export const matchEventsWithAI = async (userQuery: string): Promise<MatchResult> => {
-    if (!apiKey) {
+    if (!apiKey || apiKey === 'PLACEHOLDER_API_KEY') {
         // Fallback: basic keyword matching
+        return fallbackMatch(userQuery);
+    }
+
+    let ai;
+    try {
+        ai = new GoogleGenAI({ apiKey });
+    } catch (e) {
+        console.error("Failed to initialize Gemini client", e);
         return fallbackMatch(userQuery);
     }
 

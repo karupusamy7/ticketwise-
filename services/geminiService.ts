@@ -2,14 +2,21 @@ import { GoogleGenAI } from "@google/genai";
 
 const apiKey = process.env.API_KEY || '';
 
-// Initialize the Gemini AI client
+// Initialize the Gemini AI client lazily to avoid crashes if key is missing
 // Note: In a real production app, you might proxy this through a backend to hide the key,
 // but for this demo, we use it directly as per instructions.
-const ai = new GoogleGenAI({ apiKey });
 
 export const getGeminiResponse = async (userMessage: string): Promise<string> => {
-  if (!apiKey) {
-    return "I'm sorry, but I can't connect to the AI service right now (API Key missing). Please try browsing manually.";
+  if (!apiKey || apiKey === 'PLACEHOLDER_API_KEY') {
+    return "I'm sorry, I can't connect to the AI service right now because the API Key is not configured. Please check the README to set up your API key.";
+  }
+
+  let ai;
+  try {
+    ai = new GoogleGenAI({ apiKey });
+  } catch (e) {
+    console.error("Failed to initialize Gemini client", e);
+    return "I'm sorry, I'm having trouble connecting to the AI service.";
   }
 
   try {
