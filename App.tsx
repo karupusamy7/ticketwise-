@@ -5,12 +5,28 @@ import { MOCK_MOVIES, MOCK_EVENTS, generateSeats } from './constants';
 import { Movie, Event, Seat, Booking } from './types';
 import SeatMap from './components/SeatMap';
 import GeminiChat from './components/GeminiChat';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import SignIn from './pages/SignIn';
+import SignUp from './pages/SignUp';
+import Discovery from './pages/Discovery';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // --- Shared Components ---
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error("Failed to log out", error);
+    }
+  };
+
   return (
     <nav className="bg-dark-card border-b border-slate-700 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -21,12 +37,18 @@ const Navbar = () => {
           </Link>
 
           <div className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-slate-300 hover:text-white transition-colors">Movies</Link>
-            <Link to="/" className="text-slate-300 hover:text-white transition-colors">Events</Link>
+            <Link to="/" className="text-slate-300 hover:text-white transition-colors">Discover</Link>
+            <Link to="/browse" className="text-slate-300 hover:text-white transition-colors">Browse</Link>
             <Link to="/my-tickets" className="text-slate-300 hover:text-white transition-colors">My Tickets</Link>
-            <Link to="/login" className="bg-brand-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-brand-500 transition-colors shadow-lg shadow-brand-500/20">
-              Sign In
-            </Link>
+            {user ? (
+              <button onClick={handleLogout} className="bg-slate-700 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-slate-600 transition-colors">
+                Sign Out
+              </button>
+            ) : (
+              <Link to="/login" className="bg-brand-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-brand-500 transition-colors shadow-lg shadow-brand-500/20">
+                Sign In
+              </Link>
+            )}
           </div>
 
           <button onClick={() => setIsOpen(!isOpen)} className="md:hidden text-slate-300">
@@ -37,9 +59,14 @@ const Navbar = () => {
 
       {isOpen && (
         <div className="md:hidden bg-slate-800 p-4 space-y-4 border-t border-slate-700">
-          <Link to="/" className="block text-slate-300 hover:text-white" onClick={() => setIsOpen(false)}>Home</Link>
+          <Link to="/" className="block text-slate-300 hover:text-white" onClick={() => setIsOpen(false)}>Discover</Link>
+          <Link to="/browse" className="block text-slate-300 hover:text-white" onClick={() => setIsOpen(false)}>Browse</Link>
           <Link to="/my-tickets" className="block text-slate-300 hover:text-white" onClick={() => setIsOpen(false)}>My Tickets</Link>
-          <Link to="/login" className="block w-full text-left text-brand-400 font-medium" onClick={() => setIsOpen(false)}>Sign In</Link>
+          {user ? (
+            <button onClick={() => { handleLogout(); setIsOpen(false); }} className="block w-full text-left text-slate-300 hover:text-white font-medium">Sign Out</button>
+          ) : (
+            <Link to="/login" className="block w-full text-left text-brand-400 font-medium" onClick={() => setIsOpen(false)}>Sign In</Link>
+          )}
         </div>
       )}
     </nav>
@@ -60,84 +87,7 @@ const Footer = () => (
 
 // --- Pages ---
 
-const LoginPage = () => {
-  const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Mock login logic
-    if (email && password) {
-      navigate('/');
-    }
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Background with blur */}
-      <div className="absolute inset-0 z-0">
-        <img 
-          src="https://picsum.photos/1920/1080?random=login&blur=5" 
-          alt="Background" 
-          className="w-full h-full object-cover opacity-20"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-dark-bg/80 via-dark-bg/90 to-dark-bg"></div>
-      </div>
-
-      <div className="w-full max-w-md bg-dark-card border border-slate-700 p-8 rounded-2xl shadow-2xl relative z-10 mx-4 animate-fade-in">
-        <div className="text-center mb-8">
-          <Link to="/" className="flex justify-center mb-4 hover:scale-105 transition-transform">
-             <div className="bg-brand-500/10 p-3 rounded-full">
-               <TicketIcon className="w-10 h-10 text-brand-500" />
-             </div>
-          </Link>
-          <h2 className="text-2xl font-bold text-white mb-2">Welcome Back</h2>
-          <p className="text-slate-400">Sign in to access your tickets and bookings</p>
-        </div>
-
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Email Address</label>
-            <input 
-              type="email" 
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-slate-600"
-              placeholder="name@example.com"
-            />
-          </div>
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="block text-sm font-medium text-slate-300">Password</label>
-              <button type="button" className="text-xs text-brand-400 hover:text-brand-300">Forgot password?</button>
-            </div>
-            <input 
-              type="password" 
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-slate-600"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button 
-            type="submit"
-            className="w-full bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-500 transition-colors shadow-lg shadow-brand-500/25 mt-2"
-          >
-            Sign In
-          </button>
-        </form>
-
-        <div className="mt-8 pt-6 border-t border-slate-700 text-center text-sm text-slate-500">
-          Don't have an account? <button className="text-brand-400 hover:text-brand-300 font-medium">Sign up</button>
-        </div>
-      </div>
-    </div>
-  );
-};
+// LoginPage Mock removed. Using pages/SignIn.tsx
 
 const HomePage = () => {
   const [activeTab, setActiveTab] = useState<'movies' | 'events'>('movies');
@@ -150,9 +100,9 @@ const HomePage = () => {
     <div className="min-h-screen">
       {/* Hero */}
       <div className="relative h-[500px] w-full overflow-hidden">
-        <img 
-          src={MOCK_MOVIES[0].backdropUrl} 
-          alt="Hero" 
+        <img
+          src={MOCK_MOVIES[0].backdropUrl}
+          alt="Hero"
           className="absolute inset-0 w-full h-full object-cover opacity-60"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-dark-bg via-dark-bg/50 to-transparent"></div>
@@ -162,7 +112,7 @@ const HomePage = () => {
           </span>
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">{MOCK_MOVIES[0].title}</h1>
           <p className="text-slate-300 max-w-xl mb-6 line-clamp-2 md:line-clamp-none">{MOCK_MOVIES[0].description}</p>
-          <Link 
+          <Link
             to={`/movie/${MOCK_MOVIES[0].id}`}
             className="inline-flex items-center gap-2 bg-white text-dark-bg px-8 py-3 rounded-full font-bold hover:bg-slate-200 transition-colors"
           >
@@ -230,7 +180,7 @@ const HomePage = () => {
                   </div>
                 </div>
                 <h3 className="text-white font-bold text-lg truncate group-hover:text-brand-400 transition-colors">{event.title}</h3>
-                <p className="text-slate-500 text-sm flex items-center gap-1"><MapPin className="w-3 h-3"/> {event.venue}</p>
+                <p className="text-slate-500 text-sm flex items-center gap-1"><MapPin className="w-3 h-3" /> {event.venue}</p>
                 <p className="text-brand-400 font-medium mt-1">From ${event.priceMin}</p>
               </Link>
             ))
@@ -256,14 +206,14 @@ const DetailsPage = () => {
         <Link to="/" className="inline-flex items-center text-slate-400 hover:text-white mb-6">
           <ChevronLeft className="w-4 h-4 mr-1" /> Back to browse
         </Link>
-        
+
         <div className="grid md:grid-cols-3 gap-12">
           {/* Poster */}
           <div className="md:col-span-1">
             <div className="rounded-2xl overflow-hidden shadow-2xl border border-slate-800 sticky top-24">
-              <img 
-                src={isMovie ? (item as Movie).posterUrl : (item as Event).imageUrl} 
-                alt={item.title} 
+              <img
+                src={isMovie ? (item as Movie).posterUrl : (item as Event).imageUrl}
+                alt={item.title}
                 className="w-full h-auto object-cover"
               />
             </div>
@@ -272,7 +222,7 @@ const DetailsPage = () => {
           {/* Info */}
           <div className="md:col-span-2 text-white">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">{item.title}</h1>
-            
+
             <div className="flex flex-wrap gap-4 mb-8 text-sm text-slate-400">
               {isMovie ? (
                 <>
@@ -309,10 +259,10 @@ const DetailsPage = () => {
               <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
                 <Clock className="w-5 h-5 text-brand-500" /> Select Showtime
               </h3>
-              
+
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {['10:30 AM', '1:45 PM', '4:30 PM', '7:15 PM', '10:00 PM'].map((time) => (
-                  <Link 
+                  <Link
                     key={time}
                     to={`/book/${item.id}/${encodeURIComponent(time)}`}
                     className="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-600 hover:border-brand-500 hover:bg-brand-500/10 transition-all cursor-pointer group"
@@ -390,21 +340,21 @@ const BookingPage = () => {
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-6xl mx-auto grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
-           <div className="flex items-center gap-4 mb-6">
-             <Link to={`/movie/${id}`} className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 text-white"><ChevronLeft className="w-5 h-5"/></Link>
-             <div>
-               <h2 className="text-2xl font-bold text-white">{item.title}</h2>
-               <p className="text-slate-400 text-sm">{decodeURIComponent(time || '')} • City Cinema</p>
-             </div>
-           </div>
-           
-           <SeatMap seats={seats} onSeatClick={handleSeatClick} />
+          <div className="flex items-center gap-4 mb-6">
+            <Link to={`/movie/${id}`} className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 text-white"><ChevronLeft className="w-5 h-5" /></Link>
+            <div>
+              <h2 className="text-2xl font-bold text-white">{item.title}</h2>
+              <p className="text-slate-400 text-sm">{decodeURIComponent(time || '')} • City Cinema</p>
+            </div>
+          </div>
+
+          <SeatMap seats={seats} onSeatClick={handleSeatClick} />
         </div>
 
         <div className="lg:col-span-1">
           <div className="bg-dark-card border border-slate-700 rounded-2xl p-6 sticky top-24">
             <h3 className="text-xl font-bold text-white mb-6">Booking Summary</h3>
-            
+
             <div className="space-y-4 mb-6">
               {selectedSeats.length === 0 ? (
                 <p className="text-slate-500 text-sm text-center py-4 italic">Select seats to proceed</p>
@@ -457,14 +407,14 @@ const ConfirmationPage = () => {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="bg-dark-card border border-slate-700 rounded-3xl p-8 max-w-md w-full text-center relative overflow-hidden">
         {showConfetti && <div className="absolute inset-0 bg-brand-500/10 animate-pulse pointer-events-none"></div>}
-        
+
         <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
           <CheckCircle className="w-10 h-10 text-green-500" />
         </div>
-        
+
         <h2 className="text-3xl font-bold text-white mb-2">Booking Confirmed!</h2>
         <p className="text-slate-400 mb-8">Your tickets have been sent to your email.</p>
-        
+
         <div className="flex flex-col gap-3">
           <Link to="/my-tickets" className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl font-medium transition-colors">
             View My Tickets
@@ -491,7 +441,7 @@ const MyTicketsPage = () => {
   return (
     <div className="min-h-screen py-12 px-4 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold text-white mb-8">My Tickets</h1>
-      
+
       {bookings.length === 0 ? (
         <div className="text-center py-20 bg-dark-card rounded-2xl border border-slate-700">
           <TicketIcon className="w-16 h-16 text-slate-600 mx-auto mb-4" />
@@ -503,7 +453,7 @@ const MyTicketsPage = () => {
           {bookings.map((booking) => (
             <div key={booking.id} className="bg-dark-card border border-slate-700 rounded-2xl overflow-hidden flex flex-col sm:flex-row shadow-lg">
               <div className="sm:w-32 bg-slate-800 relative">
-                 <img src={booking.eventImage} alt="" className="w-full h-full object-cover opacity-80" />
+                <img src={booking.eventImage} alt="" className="w-full h-full object-cover opacity-80" />
               </div>
               <div className="flex-1 p-6 flex flex-col justify-center">
                 <h3 className="text-xl font-bold text-white mb-1">{booking.eventTitle}</h3>
@@ -534,19 +484,34 @@ const MyTicketsPage = () => {
 
 function AppContent() {
   const location = useLocation();
-  const isAuthPage = location.pathname === '/login';
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
 
   return (
     <div className="flex flex-col min-h-screen bg-dark-bg text-dark-text font-sans">
       {!isAuthPage && <Navbar />}
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<SignIn />} />
+        <Route path="/signup" element={<SignUp />} />
+
+        <Route path="/" element={<Discovery />} />
+        <Route path="/browse" element={<HomePage />} />
         <Route path="/movie/:id" element={<DetailsPage />} />
         <Route path="/event/:id" element={<DetailsPage />} />
-        <Route path="/book/:id/:time" element={<BookingPage />} />
-        <Route path="/confirmation" element={<ConfirmationPage />} />
-        <Route path="/my-tickets" element={<MyTicketsPage />} />
+        <Route path="/book/:id/:time" element={
+          <ProtectedRoute>
+            <BookingPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/confirmation" element={
+          <ProtectedRoute>
+            <ConfirmationPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/my-tickets" element={
+          <ProtectedRoute>
+            <MyTicketsPage />
+          </ProtectedRoute>
+        } />
       </Routes>
       {!isAuthPage && <Footer />}
       {!isAuthPage && <GeminiChat />}
@@ -557,7 +522,9 @@ function AppContent() {
 function App() {
   return (
     <HashRouter>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </HashRouter>
   );
 }
